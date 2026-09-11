@@ -66,7 +66,6 @@ if uploaded_file is not None:
     
     # เลือกเฉพาะคอลัมน์ที่ต้องการแสดงผล
     display_cols = ['รหัสพนักงาน ', 'ชื่อ - นามสกุล', 'ตำแหน่ง', 'หน่วยงาน', 'อายุ', 'โปรแกรม', 'ราคาพื้นฐาน', 'ใบรับรองแพทย์ 5 โรค']
-    # กรองเอาเฉพาะคอลัมน์ที่มีอยู่จริงในไฟล์
     display_cols = [c for c in display_cols if c in df_filtered.columns]
     df_display = df_filtered[display_cols].copy()
 
@@ -84,7 +83,7 @@ if uploaded_file is not None:
             df_display, 
             use_container_width=True, 
             hide_index=True,
-            disabled=[c for c in display_cols if c != 'ใบรับรองแพทย์ 5 โรค'] # ล็อกคอลัมน์อื่น ห้ามแก้ไข
+            disabled=[c for c in display_cols if c != 'ใบรับรองแพทย์ 5 โรค'] 
         )
         
         # คำนวณราคารวมแบบเรียลไทม์หลังจากแก้ไข
@@ -170,3 +169,6 @@ if uploaded_file is not None:
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.warning("ไม่มีข้อมูลเพียงพอสำหรับสร้างแผนภูมิครับ")
+else:
+    st.info("กรุณาอัปโหลดไฟล์ Excel เพื่อเริ่มต้นการทำงานครับ")
+          
