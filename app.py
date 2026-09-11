@@ -24,7 +24,7 @@ uploaded_file = st.file_uploader("อัปโหลดไฟล์รายช�
 if uploaded_file is not None:
     df_raw = pd.read_excel(uploaded_file)
     
-    # [แก้ไขหลัก] ทำความสะอาดชื่อคอลัมน์โดยตัดช่องว่างหน้า-หลังออกทั้งหมด
+    # ทำความสะอาดชื่อคอลัมน์โดยตัดช่องว่างหน้า-หลัง
     df_raw.columns = df_raw.columns.str.strip()
     
     # ==========================================
@@ -34,7 +34,6 @@ if uploaded_file is not None:
     df_filtered = df_raw[~df_raw['หมายเหตุ'].str.contains('ไม่ผ่าน|ทดลองงาน')].copy()
     
     def assign_program(row):
-        # อ้างอิงตามชื่อคอลัมน์จริงในไฟล์ (ระดับนักงาน)
         level = str(row.get('ระดับนักงาน', '')).strip()
         if level == 'nan': level = ''
             
@@ -55,7 +54,6 @@ if uploaded_file is not None:
     df_filtered[['โปรแกรม', 'ราคาพื้นฐาน']] = df_filtered.apply(assign_program, axis=1)
     df_filtered['ใบรับรองแพทย์ 5 โรค'] = False
     
-    # อัปเดตชื่อคอลัมน์รหัสพนักงานให้ตรงกัน
     display_cols = ['รหัสพนักงาน', 'ชื่อ - นามสกุล', 'ตำแหน่ง', 'หน่วยงาน', 'อายุ', 'โปรแกรม', 'ราคาพื้นฐาน', 'ใบรับรองแพทย์ 5 โรค']
     display_cols = [c for c in display_cols if c in df_filtered.columns]
     df_display = df_filtered[display_cols].copy()
@@ -98,10 +96,13 @@ if uploaded_file is not None:
         col1, col2 = st.columns([1, 1])
         
         if 'รหัสพนักงาน' in edited_df.columns and 'โปรแกรม' in edited_df.columns:
-            summary_pro = edited_df.groupby('โปรแกรม').agg(
-                จำนวนพนักงาน=('รหัสพนักงาน', 'count'),
-                ราคารวม=('ราคารวม', 'sum')
-            ).reset_index()
+            # [ส่วนที่แก้ไข] ใช้ Dictionary จับคู่แทนเพื่อเลี่ยงปัญหาตัวอักษรสระอำ
+            summary_pro = edited_df.groupby('โปรแกรม').agg({
+                'รหัสพนักงาน': 'count',
+                'ราคารวม': 'sum'
+            }).reset_index()
+            # สั่งเปลี่ยนชื่อคอลัมน์เป็น "จำนวนพนักงาน" ทีหลัง
+            summary_pro.rename(columns={'รหัสพนักงาน': 'จำนวนพนักงาน'}, inplace=True)
             
             med_cert_count = edited_df['ใบรับรองแพทย์ 5 โรค'].sum()
             med_cert_price = med_cert_count * 100
