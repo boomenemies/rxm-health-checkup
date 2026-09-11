@@ -7,36 +7,47 @@ import re
 st.set_page_config(page_title="ระบบสรุปผลการตรวจสุขภาพ 2025", layout="wide")
 st.title("🏥 ระบบจัดการข้อมูลตรวจสุขภาพพนักงาน 2025")
 
-# --- ข้อมูลแม่พิมพ์รายการตรวจและราคา (อ้างอิงตามใบเสนอราคา BPK 8) ---
+# --- ข้อมูลแม่พิมพ์รายการตรวจและราคา (เพิ่มชื่อภาษาไทยและอังกฤษ) ---
 TEST_MAPPING = {
-    'W/H,BP, BMI': ['Pro.1', 'Pro.2', 'Pro.3'], 
-    'PE': ['Pro.1', 'Pro.2', 'Pro.3'],
-    'X-RAY Digital': ['Pro.1', 'Pro.2', 'Pro.3'], 
-    'CBC': ['Pro.1', 'Pro.2', 'Pro.3'],
-    'UA': ['Pro.1', 'Pro.2', 'Pro.3'], 
-    'FBS': ['Pro.1', 'Pro.2', 'Pro.3'],
-    'BUN/Creatinine': ['Pro.1', 'Pro.2', 'Pro.3'], 
-    'URIC ACID': ['Pro.1', 'Pro.2', 'Pro.3'],
-    'CHOLESTEROL': ['Pro.1', 'Pro.2', 'Pro.3'], 
-    'TRIGLYCERIDE': ['Pro.1', 'Pro.2', 'Pro.3'],
-    'HDL': ['Pro.1', 'Pro.2', 'Pro.3'], 
-    'LDL': ['Pro.1', 'Pro.2', 'Pro.3'],
-    'SGOT/SGPT': ['Pro.1', 'Pro.2', 'Pro.3'], 
-    'Hbs Ag Elisa': ['Pro.1', 'Pro.2', 'Pro.3'],
-    'EKG': ['Pro.2', 'Pro.3'], 
-    'AFP': ['Pro.3'],
-    'ALK.PHOSE': ['Pro.3'], 
-    'VISION TEST': ['Pro.1', 'Pro.2', 'Pro.3']
+    'BP/BMI (น้ำหนักส่วนสูง)': ['Pro.1', 'Pro.2', 'Pro.3'], 
+    'PE (ตรวจสุขภาพทั่วไปโดยแพทย์)': ['Pro.1', 'Pro.2', 'Pro.3'],
+    'X-Ray Digital (เอ็กซเรย์ทรวงอก)': ['Pro.1', 'Pro.2', 'Pro.3'], 
+    'CBC (ตรวจความสมบูรณ์เม็ดเลือด)': ['Pro.1', 'Pro.2', 'Pro.3'],
+    'UA (ตรวจความสมบูรณ์ปัสสาวะ)': ['Pro.1', 'Pro.2', 'Pro.3'], 
+    'FBS (ตรวจระดับน้ำตาลในเลือด)': ['Pro.1', 'Pro.2', 'Pro.3'],
+    'BUN/Creatinine (ตรวจการทำงานของไต)': ['Pro.1', 'Pro.2', 'Pro.3'], 
+    'URIC Acid (ตรวจหายูริคในเลือด)': ['Pro.1', 'Pro.2', 'Pro.3'],
+    'Cholesterol (ตรวจคอเลสเตอรอลในเลือด)': ['Pro.1', 'Pro.2', 'Pro.3'], 
+    'Triglyceride (ตรวจระดับไขมันกล้ามเนื้อหัวใจ)': ['Pro.1', 'Pro.2', 'Pro.3'],
+    'HDL (ตรวจระดับไขมันในเลือดชนิดดี)': ['Pro.1', 'Pro.2', 'Pro.3'], 
+    'LDL (ตรวจระดับไขมันชนิดไม่ดี)': ['Pro.1', 'Pro.2', 'Pro.3'],
+    'SGOT/SGPT (ตรวจระดับการทำงานของตับ)': ['Pro.1', 'Pro.2', 'Pro.3'], 
+    'Hbs Ag Elisa (ตรวจหาเชื้อไวรัสตับอักเสบบี)': ['Pro.1', 'Pro.2', 'Pro.3'],
+    'Vision Test (ตรวจสายตาสั้น, ยาว, บอดสี)': ['Pro.1', 'Pro.2', 'Pro.3'],
+    'EKG (ตรวจคลื่นไฟฟ้าหัวใจ)': ['Pro.2', 'Pro.3'], 
+    'ALK PHOSE (ตรวจสมรรถภาพการทำงานของตับ)': ['Pro.3'],
+    'AFP (ตรวจหาตัวบ่งชี้สำหรับมะเร็งตับ)': ['Pro.3']
 }
 
 PRICE_MAPPING = {
-    'W/H,BP, BMI': [0, 0, 0], 'PE': [40, 40, 40], 'X-RAY Digital': [80, 80, 80],
-    'CBC': [30, 30, 0], 'UA': [20, 20, 0], 'FBS': [20, 20, 0],
-    'BUN/Creatinine': [40, 40, 0], 'URIC ACID': [30, 30, 0],
-    'CHOLESTEROL': [20, 20, 0], 'TRIGLYCERIDE': [20, 20, 0],
-    'HDL': [40, 40, 0], 'LDL': [40, 40, 0], 'SGOT/SGPT': [40, 40, 0],
-    'Hbs Ag Elisa': [80, 80, 80], 'EKG': [0, 150, 150],
-    'AFP': [0, 0, 150], 'ALK.PHOSE': [0, 0, 0], 'VISION TEST': [0, 0, 0]
+    'BP/BMI (น้ำหนักส่วนสูง)': [0, 0, 0], 
+    'PE (ตรวจสุขภาพทั่วไปโดยแพทย์)': [40, 40, 40],
+    'X-Ray Digital (เอ็กซเรย์ทรวงอก)': [80, 80, 80],
+    'CBC (ตรวจความสมบูรณ์เม็ดเลือด)': [30, 30, 0], 
+    'UA (ตรวจความสมบูรณ์ปัสสาวะ)': [20, 20, 0], 
+    'FBS (ตรวจระดับน้ำตาลในเลือด)': [20, 20, 0],
+    'BUN/Creatinine (ตรวจการทำงานของไต)': [40, 40, 0], 
+    'URIC Acid (ตรวจหายูริคในเลือด)': [30, 30, 0],
+    'Cholesterol (ตรวจคอเลสเตอรอลในเลือด)': [20, 20, 0], 
+    'Triglyceride (ตรวจระดับไขมันกล้ามเนื้อหัวใจ)': [20, 20, 0],
+    'HDL (ตรวจระดับไขมันในเลือดชนิดดี)': [40, 40, 0], 
+    'LDL (ตรวจระดับไขมันชนิดไม่ดี)': [40, 40, 0], 
+    'SGOT/SGPT (ตรวจระดับการทำงานของตับ)': [40, 40, 0],
+    'Hbs Ag Elisa (ตรวจหาเชื้อไวรัสตับอักเสบบี)': [80, 80, 80], 
+    'Vision Test (ตรวจสายตาสั้น, ยาว, บอดสี)': [0, 0, 0],
+    'EKG (ตรวจคลื่นไฟฟ้าหัวใจ)': [0, 150, 150], 
+    'ALK PHOSE (ตรวจสมรรถภาพการทำงานของตับ)': [0, 0, 0],
+    'AFP (ตรวจหาตัวบ่งชี้สำหรับมะเร็งตับ)': [0, 0, 150]
 }
 
 def export_full_excel(df_main, df_count, df_price, filename):
@@ -71,7 +82,6 @@ if uploaded_file is not None:
     if 'ใบรับรองแพทย์ 5 โรค' not in df_filtered.columns:
         df_filtered['ใบรับรองแพทย์ 5 โรค'] = False
 
-    # สร้างเครื่องหมาย ✓ สำหรับรายการที่ต้องตรวจ
     for test, programs in TEST_MAPPING.items():
         df_filtered[test] = df_filtered['โปรแกรม'].apply(lambda p: '✓' if p in programs else '-')
 
@@ -112,14 +122,14 @@ if uploaded_file is not None:
     for test, prices in PRICE_MAPPING.items():
         price_data.append({
             'รายการตรวจสุขภาพ': test, 
-            'Pro.1 (<35)': prices[0] if prices[0] > 0 else 'ฟรี',
-            'Pro.2 (>=35)': prices[1] if prices[1] > 0 else 'ฟรี',
+            'Pro.1 (อายุ <35)': prices[0] if prices[0] > 0 else 'ฟรี',
+            'Pro.2 (อายุ >=35)': prices[1] if prices[1] > 0 else 'ฟรี',
             'Pro.3 (บริหาร)': prices[2] if prices[2] > 0 else 'ฟรี'
         })
-    price_data.append({'รายการตรวจสุขภาพ': 'ใบรับรองแพทย์ 5 โรค', 'Pro.1 (<35)': 100, 'Pro.2 (>=35)': 100, 'Pro.3 (บริหาร)': 100})
-    price_data.append({'รายการตรวจสุขภาพ': '--- ราคาเหมาจ่าย/คน ---', 'Pro.1 (<35)': 500, 'Pro.2 (>=35)': 650, 'Pro.3 (บริหาร)': 500})
-    price_data.append({'รายการตรวจสุขภาพ': '--- จำนวนพนักงาน ---', 'Pro.1 (<35)': count_p1, 'Pro.2 (>=35)': count_p2, 'Pro.3 (บริหาร)': count_p3})
-    price_data.append({'รายการตรวจสุขภาพ': '--- รวมราคา (บาท) ---', 'Pro.1 (<35)': count_p1*500, 'Pro.2 (>=35)': count_p2*650, 'Pro.3 (บริหาร)': count_p3*500})
+    price_data.append({'รายการตรวจสุขภาพ': 'ใบรับรองแพทย์ 5 โรค', 'Pro.1 (อายุ <35)': 100, 'Pro.2 (อายุ >=35)': 100, 'Pro.3 (บริหาร)': 100})
+    price_data.append({'รายการตรวจสุขภาพ': '--- ราคาเหมาจ่าย/คน ---', 'Pro.1 (อายุ <35)': 500, 'Pro.2 (อายุ >=35)': 650, 'Pro.3 (บริหาร)': 500})
+    price_data.append({'รายการตรวจสุขภาพ': '--- จำนวนพนักงาน ---', 'Pro.1 (อายุ <35)': count_p1, 'Pro.2 (อายุ >=35)': count_p2, 'Pro.3 (บริหาร)': count_p3})
+    price_data.append({'รายการตรวจสุขภาพ': '--- รวมราคา (บาท) ---', 'Pro.1 (อายุ <35)': count_p1*500, 'Pro.2 (อายุ >=35)': count_p2*650, 'Pro.3 (บริหาร)': count_p3*500})
     df_summary_price = pd.DataFrame(price_data)
 
     with tab2:
