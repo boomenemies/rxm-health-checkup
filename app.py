@@ -7,7 +7,6 @@ import re
 st.set_page_config(page_title="ระบบสรุปผลการตรวจสุขภาพ 2025", layout="wide")
 st.title("🏥 ระบบจัดการข้อมูลตรวจสุขภาพพนักงาน 2025")
 
-# --- ข้อมูลแม่พิมพ์รายการตรวจและราคา ---
 TEST_MAPPING = {
     'BP/BMI (น้ำหนักส่วนสูง)': ['Pro.1', 'Pro.2', 'Pro.3'], 
     'PE (ตรวจสุขภาพทั่วไปโดยแพทย์)': ['Pro.1', 'Pro.2', 'Pro.3'],
@@ -64,7 +63,12 @@ if uploaded_file is not None:
     df_raw = pd.read_excel(uploaded_file)
     df_raw.columns = df_raw.columns.str.strip()
     
-    # 1. จัดการข้อมูลคนไม่ผ่านทดลองงาน (แก้ไขบั๊ก AttributeError)
+    # ปรับจูนชื่อคอลัมน์ให้ตรงกับโค้ดแบบ 100% ป้องกันคอลัมน์หาย
+    df_raw.rename(columns={
+        'ชื่อ - นามสกุล': 'ชื่อ-นามสกุล',
+        'ระดับนักงาน': 'ระดับพนักงาน'
+    }, inplace=True)
+    
     if 'หมายเหตุ' not in df_raw.columns:
         df_raw['หมายเหตุ'] = ''
     df_raw['หมายเหตุ'] = df_raw['หมายเหตุ'].fillna('').astype(str)
@@ -72,7 +76,6 @@ if uploaded_file is not None:
     fail_probation_count = df_raw['หมายเหตุ'].str.contains('ไม่ผ่าน|ทดลองงาน').sum()
     df_filtered = df_raw[~df_raw['หมายเหตุ'].str.contains('ไม่ผ่าน|ทดลองงาน')].copy()
     
-    # 2. จัดกลุ่มโปรแกรมการตรวจ
     def assign_program(row):
         level = str(row.get('ระดับพนักงาน', '')).strip()
         age_match = re.search(r'\d+', str(row.get('อายุ', '0')))
@@ -90,7 +93,6 @@ if uploaded_file is not None:
     for test, programs in TEST_MAPPING.items():
         df_filtered[test] = df_filtered['โปรแกรม'].apply(lambda p: '✓' if p in programs else '-')
 
-    # กำหนดหัวตารางให้ตรงตามบรีฟ
     base_cols = ['ลำดับ', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ตำแหน่ง', 'สังกัด', 'หน่วยงาน', 'ระดับพนักงาน', 'เพศ', 'อายุ', 'โปรแกรม', 'ราคาพื้นฐาน', 'ใบรับรองแพทย์ 5 โรค']
     test_cols = list(TEST_MAPPING.keys())
     
@@ -109,7 +111,6 @@ if uploaded_file is not None:
         )
         edited_df['ราคารวม (บาท)'] = edited_df['ราคาพื้นฐาน'] + (edited_df['ใบรับรองแพทย์ 5 โรค'] * 100)
 
-    # คำนวณสรุปยอด
     count_p1 = (edited_df['โปรแกรม'] == 'Pro.1').sum()
     count_p2 = (edited_df['โปรแกรม'] == 'Pro.2').sum()
     count_p3 = (edited_df['โปรแกรม'] == 'Pro.3').sum()
