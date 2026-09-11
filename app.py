@@ -154,18 +154,19 @@ if uploaded_file is not None:
             
         with col2:
             st.write("**แผนภูมิเปรียบเทียบจำนวนคนในแต่ละโปรแกรม**")
-            # สร้างกราฟแท่งด้วย Plotly
-            fig = px.bar(
-                summary_pro, 
-                x='โปรแกรม', 
-                y='จำนวนพนักงาน', 
-                color='โปรแกรม',
-                text='จำนวนพนักงาน',
-                color_discrete_sequence=px.colors.qualitative.Pastel
-            )
-            fig.update_traces(textposition='outside')
-            fig.update_layout(showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
-
-else:
-    st.info("กรุณาอัปโหลดไฟล์ Excel เพื่อเริ่มต้นการทำงานครับ")
+            # เช็กก่อนว่ามีข้อมูลให้สร้างกราฟหรือไม่
+            if not summary_pro.empty:
+                # สร้างกราฟแท่งด้วย Plotly
+                fig = px.bar(
+                    summary_pro, 
+                    x='โปรแกรม', 
+                    y='จำนวนพนักงาน', 
+                    color='โปรแกรม',
+                    text='จำนวนพนักงาน',
+                    color_discrete_sequence=px.colors.qualitative.Pastel
+                )
+                fig.update_traces(textposition='outside')
+                fig.update_layout(showlegend=False)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("ไม่มีข้อมูลเพียงพอสำหรับสร้างแผนภูมิครับ")
