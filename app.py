@@ -28,6 +28,7 @@ TEST_MAPPING = {
     'AFP (ตรวจหาตัวบ่งชี้สำหรับมะเร็งตับ)': ['Pro.3']
 }
 
+# ปรับแก้ PRICE_MAPPING: ใช้ None สำหรับรายการที่ไม่อยู่ในโปรแกรม เพื่อไม่ให้แสดงว่า "ฟรี"
 PRICE_MAPPING = {
     'BP/BMI (น้ำหนักส่วนสูง)': [0, 0, 0], 
     'PE (ตรวจสุขภาพทั่วไปโดยแพทย์)': [40, 40, 40],
@@ -44,9 +45,9 @@ PRICE_MAPPING = {
     'SGOT/SGPT (ตรวจระดับการทำงานของตับ)': [40, 40, 0],
     'Hbs Ag Elisa (ตรวจหาเชื้อไวรัสตับอักเสบบี)': [80, 80, 80], 
     'Vision Test (ตรวจสายตาสั้น, ยาว, บอดสี)': [0, 0, 0],
-    'EKG (ตรวจคลื่นไฟฟ้าหัวใจ)': [0, 150, 150], 
-    'ALK PHOSE (ตรวจสมรรถภาพการทำงานของตับ)': [0, 0, 0],
-    'AFP (ตรวจหาตัวบ่งชี้สำหรับมะเร็งตับ)': [0, 0, 150]
+    'EKG (ตรวจคลื่นไฟฟ้าหัวใจ)': [None, 150, 150],  # None = ไม่อยู่ในโปรแกรม
+    'ALK PHOSE (ตรวจสมรรถภาพการทำงานของตับ)': [None, None, 0], # None = ไม่อยู่ในโปรแกรม
+    'AFP (ตรวจหาตัวบ่งชี้สำหรับมะเร็งตับ)': [None, None, 150]   # None = ไม่อยู่ในโปรแกรม
 }
 
 def export_full_excel(df_main, df_count, df_price, filename):
@@ -63,7 +64,6 @@ if uploaded_file is not None:
     df_raw = pd.read_excel(uploaded_file)
     df_raw.columns = df_raw.columns.str.strip()
     
-    # ดักจับและเปลี่ยนชื่อคอลัมน์ให้ตรงกับที่ระบบต้องการ
     df_raw.rename(columns={
         'ชื่อ - นามสกุล': 'ชื่อ-นามสกุล',
         'ระดับ': 'ระดับพนักงาน',
@@ -82,7 +82,6 @@ if uploaded_file is not None:
         age_match = re.search(r'\d+', str(row.get('อายุ', '0')))
         age = int(age_match.group()) if age_match else 0
         
-        # เพิ่มคีย์เวิร์ด 2-, 3-, 4- เข้าไปเพื่อดักจับจากไฟล์ให้แม่นยำ
         pro3_keywords = ['2-', '3-', '4-', 'หัวหน้า', 'ผู้จัดการ', 'ผู้บริหาร', 'ผู้อำนวยการ', 'เภสัชกร', 'วิศวกร']
         is_pro3 = any(kw in level for kw in pro3_keywords)
         
@@ -133,12 +132,18 @@ if uploaded_file is not None:
 
     price_data = []
     for test, prices in PRICE_MAPPING.items():
+        # ปรับการแสดงผล: ถ้าเป็น None ให้แสดง "-" ถ้าเป็น 0 ให้แสดง "ฟรี"
+        val_p1 = '-' if prices[0] is None else ('ฟรี' if prices[0] == 0 else prices[0])
+        val_p2 = '-' if prices[1] is None else ('ฟรี' if prices[1] == 0 else prices[1])
+        val_p3 = '-' if prices[2] is None else ('ฟรี' if prices[2] == 0 else prices[2])
+
         price_data.append({
             'รายการตรวจสุขภาพ': test, 
-            'Pro.1 (อายุ <35)': prices[0] if prices[0] > 0 else 'ฟรี',
-            'Pro.2 (อายุ >=35)': prices[1] if prices[1] > 0 else 'ฟรี',
-            'Pro.3 (บริหาร)': prices[2] if prices[2] > 0 else 'ฟรี'
+            'Pro.1 (อายุ <35)': val_p1,
+            'Pro.2 (อายุ >=35)': val_p2,
+            'Pro.3 (บริหาร)': val_p3
         })
+    
     price_data.append({'รายการตรวจสุขภาพ': 'ใบรับรองแพทย์ 5 โรค', 'Pro.1 (อายุ <35)': 100, 'Pro.2 (อายุ >=35)': 100, 'Pro.3 (บริหาร)': 100})
     price_data.append({'รายการตรวจสุขภาพ': '--- ราคาเหมาจ่าย/คน ---', 'Pro.1 (อายุ <35)': 500, 'Pro.2 (อายุ >=35)': 650, 'Pro.3 (บริหาร)': 500})
     price_data.append({'รายการตรวจสุขภาพ': '--- จำนวนพนักงาน ---', 'Pro.1 (อายุ <35)': count_p1, 'Pro.2 (อายุ >=35)': count_p2, 'Pro.3 (บริหาร)': count_p3})
