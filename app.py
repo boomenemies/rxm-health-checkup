@@ -63,9 +63,10 @@ if uploaded_file is not None:
     df_raw = pd.read_excel(uploaded_file)
     df_raw.columns = df_raw.columns.str.strip()
     
-    # ปรับจูนชื่อคอลัมน์ให้ตรงกับโค้ดแบบ 100% ป้องกันคอลัมน์หาย
+    # ดักจับและเปลี่ยนชื่อคอลัมน์ให้ตรงกับที่ระบบต้องการ
     df_raw.rename(columns={
         'ชื่อ - นามสกุล': 'ชื่อ-นามสกุล',
+        'ระดับ': 'ระดับพนักงาน',
         'ระดับนักงาน': 'ระดับพนักงาน'
     }, inplace=True)
     
@@ -80,7 +81,10 @@ if uploaded_file is not None:
         level = str(row.get('ระดับพนักงาน', '')).strip()
         age_match = re.search(r'\d+', str(row.get('อายุ', '0')))
         age = int(age_match.group()) if age_match else 0
-        is_pro3 = any(kw in level for kw in ['ผู้จัดการ', 'ผู้บริหาร', 'หัวหน้างาน', 'เภสัชกร', 'วิศวกร'])
+        
+        # เพิ่มคีย์เวิร์ด 2-, 3-, 4- เข้าไปเพื่อดักจับจากไฟล์ให้แม่นยำ
+        pro3_keywords = ['2-', '3-', '4-', 'หัวหน้า', 'ผู้จัดการ', 'ผู้บริหาร', 'ผู้อำนวยการ', 'เภสัชกร', 'วิศวกร']
+        is_pro3 = any(kw in level for kw in pro3_keywords)
         
         if is_pro3: return pd.Series(['Pro.3', 500])
         elif age >= 35: return pd.Series(['Pro.2', 650])
