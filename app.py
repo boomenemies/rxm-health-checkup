@@ -62,11 +62,13 @@ uploaded_file = st.file_uploader("อัปโหลดไฟล์รายช�
 
 if uploaded_file is not None:
     df_raw = pd.read_excel(uploaded_file)
-    # ล้างช่องว่างส่วนเกินรอบๆ ชื่อหัวตาราง
     df_raw.columns = df_raw.columns.str.strip()
     
-    # 1. จัดการข้อมูลคนไม่ผ่านทดลองงาน
-    df_raw['หมายเหตุ'] = df_raw.get('หมายเหตุ', '').fillna('')
+    # 1. จัดการข้อมูลคนไม่ผ่านทดลองงาน (แก้ไขบั๊ก AttributeError)
+    if 'หมายเหตุ' not in df_raw.columns:
+        df_raw['หมายเหตุ'] = ''
+    df_raw['หมายเหตุ'] = df_raw['หมายเหตุ'].fillna('').astype(str)
+    
     fail_probation_count = df_raw['หมายเหตุ'].str.contains('ไม่ผ่าน|ทดลองงาน').sum()
     df_filtered = df_raw[~df_raw['หมายเหตุ'].str.contains('ไม่ผ่าน|ทดลองงาน')].copy()
     
@@ -85,11 +87,10 @@ if uploaded_file is not None:
     if 'ใบรับรองแพทย์ 5 โรค' not in df_filtered.columns:
         df_filtered['ใบรับรองแพทย์ 5 โรค'] = False
 
-    # สร้างคอลัมน์เครื่องหมาย ✓ สำหรับรายการที่ต้องตรวจ
     for test, programs in TEST_MAPPING.items():
         df_filtered[test] = df_filtered['โปรแกรม'].apply(lambda p: '✓' if p in programs else '-')
 
-    # อัปเดตคอลัมน์พื้นฐานให้ตรงกับบรีฟของคุณ (เพิ่ม สังกัด, เพศ)
+    # กำหนดหัวตารางให้ตรงตามบรีฟ
     base_cols = ['ลำดับ', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ตำแหน่ง', 'สังกัด', 'หน่วยงาน', 'ระดับพนักงาน', 'เพศ', 'อายุ', 'โปรแกรม', 'ราคาพื้นฐาน', 'ใบรับรองแพทย์ 5 โรค']
     test_cols = list(TEST_MAPPING.keys())
     
